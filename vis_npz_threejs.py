@@ -107,7 +107,7 @@ VENDOR_FILES = {
 # HTML can fetch it at ./3dboat.glb. Model convention: origin at boat bottom
 # center, +X = head (forward). Scale/yaw per boat are computed from each
 # OBB at runtime.
-GLB_BOAT_SRC = Path.home() / "workspace" / "3dboat.glb"
+GLB_BOAT_SRC = Path.home() / "workspace" / "to_move" / "3dboat.glb"
 
 
 def vendor_three(out_dir):
@@ -1197,6 +1197,15 @@ function renderFrame(idx) {
         waterGroup.add(voxelInstancedMesh(arr, MATS.water));
         waterIdx = idx;
       });
+      // Warm the cache for upcoming frames so the .then above usually
+      // resolves before the next renderFrame bumps renderedIdx (which
+      // would otherwise short-circuit the render and freeze water).
+      for (let k = 1; k <= 10; k++) {
+        const j = (idx + k) % frames.length;
+        const fr = frames[j];
+        if (fr.water_voxels_on_file)  loadVoxels(fr.water_voxels_on_file).catch(() => {});
+        if (fr.water_voxels_off_file) loadVoxels(fr.water_voxels_off_file).catch(() => {});
+      }
     } else {
       clearGroup(waterGroup);
       waterIdx = idx;
